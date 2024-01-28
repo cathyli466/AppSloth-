@@ -60,9 +60,9 @@ export default function Clock() {
 const styles = StyleSheet.create({
   container: {
       flex: 1,
-      backgroundColor: '071218',
+      backgroundColor: '#FFFFFF',
       alignItems: "center",
-      justifyContent: 'center',
+      justifyContent: 'space-around',
   },
   button: {
     borderWidth:10,
@@ -71,25 +71,41 @@ const styles = StyleSheet.create({
     height: screen.width/2,
     borderRadius: screen.width/2,
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
+    overflow: 'hidden',
   },
-
   buttonText: {
     fontSize: 45,
-    color: "#B9AAFF"
+    color: "#B9AAFF",
+    position: 'absolute',
+    top: '50%',
+    alignSelf: 'center',
+    transform: [{ translateY: -30}],
   },
   timerText: {
-    color: "black",
+    color: "#000000",
     fontSize: 90,
-    marginBottom: 20
+    marginBottom: 20,
+    alignSelf: 'center', // added to ensure text is centered in its container
   },
   buttonReset:{
     marginTop: 20,
-    borderColor: "#FF851B"
+    borderColor: "#FF851B",
+    borderWidth: 10, // added borderWidth to match the start button
+    width: screen.width / 2, // smaller width than the start button
+    height: screen.width / 2, // smaller height than the start button
+    borderRadius: screen.width / 2,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: 'hidden', // added to prevent children from rendering outside
   },
   buttonTextReset: {
-    color: '#FF851B'
+    color: '#FF851B',
+    fontSize: 45,
+    position: 'absolute', // position it over the button
+    top: '50%',
+    alignSelf: 'center',
+    transform: [{ translateY: -30 }], // adjust the translateY value to center the text
   }
-
 });
 
