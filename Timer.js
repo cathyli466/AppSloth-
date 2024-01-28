@@ -2,8 +2,6 @@ import { StatusBar } from 'expo-status-bar';
 import { Dimensions, StyleSheet, Text, View, Image, ImageBackground, ScrollView, Button, Pressable, TouchableOpacity} from 'react-native';
 import React, {useState, useEffect} from "react";
 
-
-const CathyImg = require("./assets/Cathy.jpg");
 const screen = Dimensions.get("window");
 const formatNumber = number => `0${number}`.slice(-2);
 
@@ -94,5 +92,4 @@ const styles = StyleSheet.create({
   }
 
 });
-
 
