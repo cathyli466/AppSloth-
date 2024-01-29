@@ -1,32 +1,30 @@
-import { StatusBar } from 'expo-status-bar';
-import { Dimensions, StyleSheet, Text, View, Image, ImageBackground, ScrollView, Button, Pressable, TouchableOpacity} from 'react-native';
-import React, {useState, useEffect} from "react";
+import React, { useState, useEffect } from 'react';
+import { Dimensions, View, Text, StatusBar, Image, TouchableOpacity } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Slider from '@react-native-community/slider';
 
-const screen = Dimensions.get("window");
 const formatNumber = number => `0${number}`.slice(-2);
-
+const screen = Dimensions.get("window");
 
 const getRemaining = (time) => {
-  const mins = Math.floor(time/60);
-  const secs = time - mins*60;
-  return { mins: formatNumber(mins), secs: formatNumber(secs)};
+  const mins = Math.floor(time / 60);
+  const secs = time - mins * 60;
+  return { mins: formatNumber(mins), secs: formatNumber(secs) };
 }
 
-export default function Clock({studyTime}) {
-  
-  const [remainingSecs, setRemainingSecs] = useState(0)
-  const [isActive, setIsActive] = useState(false)
-  const {mins, secs} = getRemaining(remainingSecs)
+const Timer = ({ studyTime }) => {
+  const [remainingSecs, setRemainingSecs] = useState(0);
+  const [isActive, setIsActive] = useState(false);
+  const { mins, secs } = getRemaining(remainingSecs);
   const [sliderValue2, setSliderValue2] = useState(0);
+  const [coins, setCoins] = useState(0);
 
   const ButtonPress = () => {
-    if (isActive){
+    if (isActive) {
       setIsActive(false);
       reset();
-    }
-    else{
-      setIsActive(true)
+    } else {
+      setIsActive(true);
     }
   }
 
@@ -35,120 +33,96 @@ export default function Clock({studyTime}) {
     setSliderValue2(0);
     setIsActive(false);
   }
- 
+
   const setTimer = () => {
     setRemainingSecs(0);
     setIsActive(false);
   }
 
-  useEffect(() =>{
-    let interval = null;
-    if(isActive) {
-      interval = setInterval(() => {
-        // when you start the clock at 0, stop it
-        if (remainingSecs ==0){
-          setIsActive(false);
-           }
-        if (remainingSecs>1){
-          setRemainingSecs(remainingSecs => remainingSecs -1)
-          setSliderValue2(remainingSecs);
-          };
-        
-      }, 1000)
-    } else if(!isActive && remainingSecs !==0){
-      clearInterval(interval)
-    } 
-     
+  const updateCoins = async (newCoins) => {
+    try {
+      await AsyncStorage.setItem('userCoins', newCoins.toString());
+      setCoins(newCoins);
+    } catch (error) {
+      console.error('Error updating coins in AsyncStorage:', error);
+    }
+  };
 
-    return () => clearInterval(interval);
-    
-  }, [isActive, remainingSecs])
+  const getCoinsFromStorage = async () => {
+    try {
+      const userCoins = await AsyncStorage.getItem('userCoins');
+      if (userCoins !== null) {
+        setCoins(parseInt(userCoins));
+      }
+    } catch (error) {
+      console.error('Error retrieving coins from AsyncStorage:', error);
+    }
+  };
 
- 
+  useEffect(() => {
+    getCoinsFromStorage();
+  }, []);
+
+  useEffect(() => {
+    let timerInterval = null;
+    let coinsInterval = null;
+  
+    const updateTimer = () => {
+      if (isActive && remainingSecs > 1) {
+        setRemainingSecs(remainingSecs => remainingSecs - 1);
+        setSliderValue2(remainingSecs);
+      } else {
+        setIsActive(false);
+        clearInterval(timerInterval);
+      }
+    };
+  
+    const updateCoinsEveryMinute = async () => {
+      const newCoins = coins + 1;
+      updateCoins(newCoins);
+    };
+  
+    if (isActive) {
+      timerInterval = setInterval(updateTimer, 1000);
+    }
+  
+    if (isActive && !coinsInterval) {
+      coinsInterval = setInterval(updateCoinsEveryMinute, 60000); // Update coins/ minute
+    }
+  
+    return () => {
+      clearInterval(timerInterval);
+      clearInterval(coinsInterval);
+    };
+  }, [isActive, remainingSecs, coins]);
+
   return (
-    <View style={styles.container}>
-      
-      <StatusBar style = "light-content"/>
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'space-around', backgroundColor: '#D3FFCE' }}>
+      <StatusBar style="light-content" />
       <View>
-      <Image source = {require("./assets/tree.png")} style={styles.treeImage}/>
-      <Slider style = {styles.slider}
-      thumbImage={require("./assets/climbing_tree_sloth.png")}
-      maximumValue={3600}
-      minimumValue={0}
-      minimumTrackTintColor="transparent"
-      maximumTrackTintColor="transparent"
-      step={60}
-      value={sliderValue2}
-      onValueChange={(value) => setRemainingSecs(value)}
-      />
+        <Image source={require('./assets/tree.png')} style={{ bottom: '10%' }} />
+        <Slider
+          style={{ transform: [{ rotate: '90deg' }], position: 'absolute', bottom: '50%', right: '-7%', width: screen.width / 1.2, justifyContent: 'center', alignItems: 'center', flex: 1 }}
+          thumbImage={require('./assets/climbing_tree_sloth.png')}
+          maximumValue={3600}
+          minimumValue={0}
+          minimumTrackTintColor="transparent"
+          maximumTrackTintColor="transparent"
+          step={60}
+          value={sliderValue2}
+          onValueChange={(value) => setRemainingSecs(value)}
+        />
       </View>
-    
-       <Text style = {styles.timerText}>{`${mins}:${secs}`}</Text>
-       <TouchableOpacity onPress={ButtonPress} >
-         <Image source= {require("./assets/sloth_image.png")} style={styles.imageSlothButton} />
-          <Text style = {styles.buttonText}>{isActive ? 'Reset' : "Start"}</Text>
+      <Text style={{ color: '#000000', fontSize: 90, position: 'absolute', bottom: '20%', alignSelf: 'center' }}>{`${mins}:${secs}`}</Text>
+      <TouchableOpacity onPress={ButtonPress}>
+        <Image source={require('./assets/sloth_image.png')} style={{ bottom: '-2%', width: screen.width / 3.5, height: screen.width / 3.5 }} />
+        <Text style={{ fontSize: 30, color: 'white', position: 'absolute', bottom: '15%', alignSelf: 'center', transform: [{ translateY: -30 }] }}>{isActive ? 'Reset' : 'Start'}</Text>
       </TouchableOpacity>
-     
-     
+      <View style={{ position: 'absolute', top: 10, right: -40 }}>
+        <Text>Coins: {coins}</Text>
+      </View>
     </View>
-
   );
-}
+};
 
-const styles = StyleSheet.create({
-  container: {
-      flex: 1,
-      alignItems: "center",
-      justifyContent: 'space-around',
-      backgroundColor: "#D3FFCE"
-  },
-  treeImage:{
-    bottom:"10%",
-  },
-  imageSlothButton: {
-    
-    bottom:"-2%",
-    width: screen.width/3.5,
-    height: screen.width/3.5,
-  },
-  imageSlothClimbing: {
-    width: screen.width/2,
-    height: screen.width/2,
-  }
-  ,
-
-  button: {
-    width: screen.width/4,
-    height: screen.width/4,
-    borderRadius: screen.width/2,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: 'hidden',
-  },
-  buttonText: {
-    fontSize: 30,
-    color: "white",
-    position: 'absolute',
-    bottom: '15%',
-    alignSelf: 'center',
-    transform: [{ translateY: -30}],
-  },
-  timerText: {
-    color: "#000000",
-    fontSize: 90,
-    position: 'absolute',
-    bottom: "20%",
-    alignSelf: 'center', // added to ensure text is centered in its container
-  },
-
-  slider: {
-    transform: [{rotate: '90deg'}],
-    position: 'absolute',
-    bottom: "50%",
-    right: "-7%",
-    width: screen.width/1.2,
-    justifyContent: "center", 
-    alignItems: "center",
-    flex:1
-  }
-});
+export default Timer;
