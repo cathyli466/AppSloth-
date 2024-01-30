@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dimensions, View, Text, StatusBar, Image, TouchableOpacity, Alert } from 'react-native';
+import { Dimensions, View, Text, StatusBar, Image, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Slider from '@react-native-community/slider';
 
@@ -12,12 +12,14 @@ const getRemaining = (time) => {
   return { mins: formatNumber(mins), secs: formatNumber(secs) };
 }
 
-const Timer = ({ studyTime }) => {
+const Timer = ({ studyTime = 1800 }) => {
   const [remainingSecs, setRemainingSecs] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const { mins, secs } = getRemaining(remainingSecs);
   const [sliderValue2, setSliderValue2] = useState(0);
   const [coins, setCoins] = useState(0);
+  const [coinsEarned, setCoinsEarned] = useState(0);
+  const [showCoinsMessage, setShowCoinsMessage] = useState(false);
 
   const ButtonPress = () => {
     if (isActive) {
@@ -43,6 +45,7 @@ const Timer = ({ studyTime }) => {
     try {
       await AsyncStorage.setItem('userCoins', newCoins.toString());
       setCoins(newCoins);
+      setCoinsEarned(newCoins - coins); // Update coinsEarned based on the difference
     } catch (error) {
       console.error('Error updating coins in AsyncStorage:', error);
     }
@@ -59,26 +62,34 @@ const Timer = ({ studyTime }) => {
     }
   };
 
+  const updateCoinsEveryMinute = async () => {
+    const elapsedMinutes = (studyTime - remainingSecs) / 60;
+    const newCoins = coins + Math.ceil(elapsedMinutes);
+    updateCoins(newCoins);
+  };
+  
+
+  const handleTimerEnd = () => {
+    const earnedCoinsMessage = `You earned ${coinsEarned} coin(s) for your study session!`;
+    alert(earnedCoinsMessage);
+    setIsActive(false);
+  };
+
   useEffect(() => {
     getCoinsFromStorage();
   }, []);
 
   useEffect(() => {
     let timerInterval = null;
+    let coinsInterval = null;
 
     const updateTimer = () => {
       if (isActive && remainingSecs > 1) {
         setRemainingSecs(remainingSecs => remainingSecs - 1);
         setSliderValue2(remainingSecs);
       } else {
-        setIsActive(false);
+        handleTimerEnd();
         clearInterval(timerInterval);
-
-        // Timer reached 0, show message and update coins
-        if (coins > 0) {
-          Alert.alert('Coins Received', `You received ${coins} coins!`);
-          updateCoins(coins + 1);
-        }
       }
     };
 
@@ -86,10 +97,23 @@ const Timer = ({ studyTime }) => {
       timerInterval = setInterval(updateTimer, 1000);
     }
 
+    if (isActive && !coinsInterval) {
+      coinsInterval = setInterval(updateCoinsEveryMinute, 60000); // Update coins every second
+    }
+
     return () => {
       clearInterval(timerInterval);
+      clearInterval(coinsInterval);
     };
-  }, [isActive, remainingSecs, coins]);
+  }, [isActive, remainingSecs, coins, coinsEarned]);
+
+  useEffect(() => {
+    if (!isActive && remainingSecs === 0 && coinsEarned > 0) {
+      alert(`You earned ${coinsEarned} coin(s) for your study session!`);
+      setShowCoinsMessage(false);
+      setCoinsEarned(0);
+    }
+  }, [isActive, remainingSecs, coinsEarned]);
 
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'space-around', backgroundColor: '#D3FFCE' }}>
@@ -113,8 +137,10 @@ const Timer = ({ studyTime }) => {
         <Image source={require('./assets/sloth_image.png')} style={{ bottom: '-2%', width: screen.width / 3.5, height: screen.width / 3.5 }} />
         <Text style={{ fontSize: 30, color: 'white', position: 'absolute', bottom: '15%', alignSelf: 'center', transform: [{ translateY: -30 }] }}>{isActive ? 'Reset' : 'Start'}</Text>
       </TouchableOpacity>
-      <View style={{ position: 'absolute', top: 10, right: -60 }}>
-        <Text>Coins: {coins}</Text>
+
+      {/* Display coins in the top right corner */}
+      <View style={{ position: 'absolute', top: 10, right: -60, backgroundColor: 'rgba(255, 255, 255, 0.8)', padding: 8, borderRadius: 5 }}>
+        <Text style={{ fontSize: 16, color: '#000000' }}>Coins: {coins}</Text>
       </View>
     </View>
   );
