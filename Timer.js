@@ -43,7 +43,7 @@ const Timer = ({ studyTime = 1800 }) => {
 
   const updateCoins = async (newCoins) => {
     try {
-      await AsyncStorage.setItem('userCoins', newCoins.toString());
+      //await AsyncStorage.setItem('userCoins', newCoins.toString());
       setCoins(newCoins);
       setCoinsEarned(newCoins); // Update coinsEarned based on the difference
     } catch (error) {
@@ -51,23 +51,20 @@ const Timer = ({ studyTime = 1800 }) => {
     }
   };
 
-  const getCoinsFromStorage = async () => {
-    try {
-      const userCoins = await AsyncStorage.getItem('userCoins');
-      if (userCoins !== null) {
-        setCoins(parseInt(userCoins));
+  // const getCoinsFromStorage = async () => {
+  //   try {
+  //     //const userCoins = await AsyncStorage.getItem('userCoins');
+  //     if (userCoins !== null) {
+  //       setCoins(parseInt(userCoins));
         
-      }
-    } catch (error) {
-      console.error('Error retrieving coins from AsyncStorage:', error);
-    }
-  };
+  //     }
+  //   } catch (error) {
+  //     console.error('Error retrieving coins from AsyncStorage:', error);
+  //   }
+  // };
 
-  const updateCoinsEveryMinute = async () => {
-    console.log(coins)
-    setCoinsEarned(coinsEarned + 1)
+  const updateCoinsEveryMinute = async () => {  
     const newCoins = coins + 1;
-    console.log(coins, newCoins, "Bye")
     updateCoins(newCoins);
   };
   
@@ -78,9 +75,9 @@ const Timer = ({ studyTime = 1800 }) => {
     setIsActive(false);
   };
 
-  useEffect(() => {
-    getCoinsFromStorage();
-  }, []);
+  // useEffect(() => {
+  //   getCoinsFromStorage();
+  // }, []);
 
   useEffect(() => {
     let timerInterval = null;
@@ -90,8 +87,7 @@ const Timer = ({ studyTime = 1800 }) => {
       if (isActive && remainingSecs > 0) {
         setRemainingSecs(remainingSecs => remainingSecs - 1);
         setSliderValue2(remainingSecs);
-        console.log(coinsEarned, "coins earned")
-        if ((remainingSecs%10) ==0){
+        if ((remainingSecs%60) ==0){
           updateCoinsEveryMinute()
         }
       } else {
@@ -114,7 +110,6 @@ const Timer = ({ studyTime = 1800 }) => {
     if (!isActive && remainingSecs === 0 && coinsEarned > 0) {
       alert(`You earned ${coinsEarned} coin(s) for your study session!`);
       setShowCoinsMessage(false);
-      console.log("jiji")
      
     }
   }, [isActive, remainingSecs, coinsEarned]);
@@ -151,5 +146,7 @@ const Timer = ({ studyTime = 1800 }) => {
     </View>
   );
 };
+
+export default Timer;
 
 export default Timer;
