@@ -45,7 +45,7 @@ const Timer = ({ studyTime = 1800 }) => {
     try {
       await AsyncStorage.setItem('userCoins', newCoins.toString());
       setCoins(newCoins);
-      setCoinsEarned(newCoins - coins); // Update coinsEarned based on the difference
+      setCoinsEarned(newCoins); // Update coinsEarned based on the difference
     } catch (error) {
       console.error('Error updating coins in AsyncStorage:', error);
     }
@@ -56,6 +56,7 @@ const Timer = ({ studyTime = 1800 }) => {
       const userCoins = await AsyncStorage.getItem('userCoins');
       if (userCoins !== null) {
         setCoins(parseInt(userCoins));
+        
       }
     } catch (error) {
       console.error('Error retrieving coins from AsyncStorage:', error);
@@ -63,8 +64,10 @@ const Timer = ({ studyTime = 1800 }) => {
   };
 
   const updateCoinsEveryMinute = async () => {
-    const elapsedMinutes = (studyTime - remainingSecs) / 60;
-    const newCoins = coins + Math.ceil(elapsedMinutes);
+    console.log(coins)
+    setCoinsEarned(coinsEarned + 1)
+    const newCoins = coins + 1;
+    console.log(coins, newCoins, "Bye")
     updateCoins(newCoins);
   };
   
@@ -81,39 +84,41 @@ const Timer = ({ studyTime = 1800 }) => {
 
   useEffect(() => {
     let timerInterval = null;
-    let coinsInterval = null;
+    
 
     const updateTimer = () => {
-      if (isActive && remainingSecs > 1) {
+      if (isActive && remainingSecs > 0) {
         setRemainingSecs(remainingSecs => remainingSecs - 1);
         setSliderValue2(remainingSecs);
+        console.log(coinsEarned, "coins earned")
+        if ((remainingSecs%10) ==0){
+          updateCoinsEveryMinute()
+        }
       } else {
         handleTimerEnd();
         clearInterval(timerInterval);
       }
     };
-
     if (isActive) {
       timerInterval = setInterval(updateTimer, 1000);
     }
 
-    if (isActive && !coinsInterval) {
-      coinsInterval = setInterval(updateCoinsEveryMinute, 60000); // Update coins every second
-    }
-
     return () => {
       clearInterval(timerInterval);
-      clearInterval(coinsInterval);
     };
   }, [isActive, remainingSecs, coins, coinsEarned]);
+
+
 
   useEffect(() => {
     if (!isActive && remainingSecs === 0 && coinsEarned > 0) {
       alert(`You earned ${coinsEarned} coin(s) for your study session!`);
       setShowCoinsMessage(false);
-      setCoinsEarned(0);
+      console.log("jiji")
+     
     }
   }, [isActive, remainingSecs, coinsEarned]);
+
 
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'space-around', backgroundColor: '#D3FFCE' }}>
@@ -141,6 +146,7 @@ const Timer = ({ studyTime = 1800 }) => {
       {/* Display coins in the top right corner */}
       <View style={{ position: 'absolute', top: 10, right: -60, backgroundColor: 'rgba(255, 255, 255, 0.8)', padding: 8, borderRadius: 5 }}>
         <Text style={{ fontSize: 16, color: '#000000' }}>Coins: {coins}</Text>
+        
       </View>
     </View>
   );
