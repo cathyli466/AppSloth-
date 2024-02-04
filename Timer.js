@@ -18,8 +18,8 @@ const Timer = ({ studyTime = 1800 }) => {
   const { mins, secs } = getRemaining(remainingSecs);
   const [sliderValue2, setSliderValue2] = useState(0);
   const [coins, setCoins] = useState(0);
-  const [coinsEarned, setCoinsEarned] = useState(0);
   const [showCoinsMessage, setShowCoinsMessage] = useState(false);
+  const [secondCounter, setSecondCounter] = useState(0);
 
   const ButtonPress = () => {
     if (isActive) {
@@ -41,80 +41,68 @@ const Timer = ({ studyTime = 1800 }) => {
     setIsActive(false);
   }
 
-  const updateCoins = async (newCoins) => {
-    try {
-      //await AsyncStorage.setItem('userCoins', newCoins.toString());
-      setCoins(newCoins);
-      setCoinsEarned(newCoins); // Update coinsEarned based on the difference
-    } catch (error) {
-      console.error('Error updating coins in AsyncStorage:', error);
-    }
-  };
+   // Retrieve coins from storage when the app launches
+   useEffect(() => {
+    const getCoinsFromStorage = async () => {
+      try {
+        const userCoins = await AsyncStorage.getItem('userCoins');
+        if (userCoins !== null) {
+          setCoins(parseInt(userCoins, 10));
+        }
+      } catch (error) {
+        console.error('Error retrieving coins from AsyncStorage:', error);
+      }
+    };
 
-  // const getCoinsFromStorage = async () => {
-  //   try {
-  //     //const userCoins = await AsyncStorage.getItem('userCoins');
-  //     if (userCoins !== null) {
-  //       setCoins(parseInt(userCoins));
-        
-  //     }
-  //   } catch (error) {
-  //     console.error('Error retrieving coins from AsyncStorage:', error);
-  //   }
-  // };
-
-  const updateCoinsEveryMinute = async () => {  
-    const newCoins = coins + 1;
-    updateCoins(newCoins);
-  };
+    getCoinsFromStorage();
+  }, []);
   
+  // Save coins to storage when coin count changes
+  useEffect(() => {
+    const saveCoinsToStorage = async () => {
+      try {
+        await AsyncStorage.setItem('userCoins', coins.toString());
+      } catch (error) {
+        console.error('Error saving coins to AsyncStorage:', error);
+      }
+    };
 
-  const handleTimerEnd = () => {
-    const earnedCoinsMessage = `You earned ${coinsEarned} coin(s) for your study session!`;
-    alert(earnedCoinsMessage);
-    setIsActive(false);
-  };
-
-  // useEffect(() => {
-  //   getCoinsFromStorage();
-  // }, []);
+    saveCoinsToStorage();
+  }, [coins]);
 
   useEffect(() => {
     let timerInterval = null;
-    
 
-    const updateTimer = () => {
-      if (isActive && remainingSecs > 0) {
-        setRemainingSecs(remainingSecs => remainingSecs - 1);
-        setSliderValue2(remainingSecs);
-        if ((remainingSecs%60) ==0){
-          updateCoinsEveryMinute()
-        }
-      } else {
-        handleTimerEnd();
-        clearInterval(timerInterval);
-      }
-    };
-    if (isActive) {
-      timerInterval = setInterval(updateTimer, 1000);
-    }
+    if (isActive && remainingSecs >= 0) {
+      timerInterval = setInterval(() => {
+        setSecondCounter(secondCounter => secondCounter + 1);
+        setRemainingSecs(remainingSecs => {
+          if (remainingSecs === 0) {
+            handleTimerEnd();
+            clearInterval(timerInterval);
+          }
+          setSliderValue2(remainingSecs);
+          return remainingSecs - 1;
+        });
 
-    return () => {
+      }, 1000); 
+    } else if (!isActive) {
       clearInterval(timerInterval);
-    };
-  }, [isActive, remainingSecs, coins, coinsEarned]);
-
-
-
-  useEffect(() => {
-    if (!isActive && remainingSecs === 0 && coinsEarned > 0) {
-      alert(`You earned ${coinsEarned} coin(s) for your study session!`);
-      setShowCoinsMessage(false);
-     
     }
-  }, [isActive, remainingSecs, coinsEarned]);
 
+    return () => clearInterval(timerInterval);
+  }, [isActive, remainingSecs]);
 
+  const handleTimerEnd = () => {
+    const newCoinsEarned = Math.floor(secondCounter / 60);
+    console.log(`Coins Earned: ${newCoinsEarned}`); // Add this before the alert
+    alert(`You earned ${newCoinsEarned} coin(s) for your study session!`);
+    setCoins(coins => coins + newCoinsEarned)
+    setIsActive(false);
+    setRemainingSecs(0);
+    setSecondCounter(0);
+};
+ 
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'space-around', backgroundColor: '#D3FFCE' }}>
       <StatusBar style="light-content" />
@@ -123,11 +111,11 @@ const Timer = ({ studyTime = 1800 }) => {
         <Slider
           style={{ transform: [{ rotate: '90deg' }], position: 'absolute', bottom: '50%', right: '-7%', width: screen.width / 1.2, justifyContent: 'center', alignItems: 'center', flex: 1 }}
           thumbImage={require('./assets/climbing_tree_sloth.png')}
-          maximumValue={3600}
+          maximumValue={3600} // Change max time
           minimumValue={0}
           minimumTrackTintColor="transparent"
           maximumTrackTintColor="transparent"
-          step={60}
+          step={60} // HERE TO ADJUST THE INTERVAL
           value={sliderValue2}
           onValueChange={(value) => setRemainingSecs(value)}
         />
@@ -146,7 +134,5 @@ const Timer = ({ studyTime = 1800 }) => {
     </View>
   );
 };
-
-export default Timer;
 
 export default Timer;
