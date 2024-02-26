@@ -1,7 +1,7 @@
 # **AppSloth**
 
-Cathy Li 
-Grace Xu 
+Cathy Li <br>
+Grace Xu <br>
 Jack Li 
 
 # **App Description:**
